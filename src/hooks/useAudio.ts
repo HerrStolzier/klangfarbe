@@ -1,10 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { AnalyserData } from "@/lib/visualizers/types";
 
 const FFT_SIZE = 2048;
-
-import type { AnalyserData } from "@/lib/visualizers/types";
 
 function computeEnergy(frequency: Uint8Array<ArrayBuffer>): {
   low: number;
@@ -32,6 +31,8 @@ function computeEnergy(frequency: Uint8Array<ArrayBuffer>): {
   return { low, mid, high };
 }
 
+export type AudioSource = "file" | "mic" | null;
+
 interface UseAudioOptions {
   onError?: (message: string) => void;
 }
@@ -41,14 +42,16 @@ export function useAudio(options: UseAudioOptions = {}) {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const micSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const frequencyRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
   const waveformRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [source, setSource] = useState<AudioSource>(null);
 
-  // Ensure AudioContext + AnalyserNode exist (lazy init)
   const ensureContext = useCallback(() => {
     if (!ctxRef.current) {
       const ctx = new AudioContext();
@@ -73,38 +76,47 @@ export function useAudio(options: UseAudioOptions = {}) {
     };
   }, []);
 
+  // Disconnect any active mic
+  const stopMic = useCallback(() => {
+    if (micSourceRef.current) {
+      micSourceRef.current.disconnect();
+      micSourceRef.current = null;
+    }
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach((t) => t.stop());
+      micStreamRef.current = null;
+    }
+  }, []);
+
+  // Disconnect any active file source
+  const stopFile = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.removeAttribute("src");
+      audioRef.current.load();
+    }
+    if (sourceRef.current) {
+      sourceRef.current.disconnect();
+      sourceRef.current = null;
+    }
+  }, []);
+
   const load = useCallback(
     (url: string) => {
+      stopMic();
+      stopFile();
       const { ctx, analyser } = ensureContext();
-
-      // Cleanup previous audio element
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.removeAttribute("src");
-        audioRef.current.load();
-      }
-      if (sourceRef.current) {
-        sourceRef.current.disconnect();
-        sourceRef.current = null;
-      }
 
       const audio = new Audio();
       audio.crossOrigin = "anonymous";
       audio.src = url;
 
-      audio.addEventListener("loadedmetadata", () => {
-        setDuration(audio.duration);
-      });
-
-      audio.addEventListener("timeupdate", () => {
-        setCurrentTime(audio.currentTime);
-      });
-
+      audio.addEventListener("loadedmetadata", () => setDuration(audio.duration));
+      audio.addEventListener("timeupdate", () => setCurrentTime(audio.currentTime));
       audio.addEventListener("ended", () => {
         setIsPlaying(false);
         setCurrentTime(0);
       });
-
       audio.addEventListener("error", () => {
         const msg =
           audio.error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
@@ -116,18 +128,59 @@ export function useAudio(options: UseAudioOptions = {}) {
         setIsPlaying(false);
       });
 
-      // Connect: audio → source → analyser → destination
-      const source = ctx.createMediaElementSource(audio);
-      source.connect(analyser);
-      sourceRef.current = source;
+      const src = ctx.createMediaElementSource(audio);
+      src.connect(analyser);
+      sourceRef.current = src;
       audioRef.current = audio;
 
+      setSource("file");
       setIsPlaying(false);
       setCurrentTime(0);
       setDuration(0);
     },
-    [ensureContext],
+    [ensureContext, stopMic, stopFile, options],
   );
+
+  const startMic = useCallback(async () => {
+    stopFile();
+    stopMic();
+    const { analyser } = ensureContext();
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const ctx = ctxRef.current!;
+      const micSource = ctx.createMediaStreamSource(stream);
+      micSource.connect(analyser);
+
+      // Disconnect analyser from destination so we don't hear feedback
+      analyser.disconnect();
+
+      micStreamRef.current = stream;
+      micSourceRef.current = micSource;
+      setSource("mic");
+      setIsPlaying(true);
+      setCurrentTime(0);
+      setDuration(0);
+    } catch {
+      options.onError?.("Mikrofonzugriff verweigert.");
+    }
+  }, [ensureContext, stopFile, stopMic, options]);
+
+  const stopMicInput = useCallback(() => {
+    stopMic();
+    // Reconnect analyser to destination for file playback
+    const analyser = analyserRef.current;
+    const ctx = ctxRef.current;
+    if (analyser && ctx) {
+      try {
+        analyser.connect(ctx.destination);
+      } catch {
+        // already connected
+      }
+    }
+    setSource(null);
+    setIsPlaying(false);
+  }, [stopMic]);
 
   const play = useCallback(async () => {
     if (!audioRef.current) return;
@@ -156,7 +209,6 @@ export function useAudio(options: UseAudioOptions = {}) {
     const analyser = analyserRef.current;
     const frequency = frequencyRef.current;
     const waveform = waveformRef.current;
-
     if (!analyser || !frequency || !waveform) return null;
 
     analyser.getByteFrequencyData(frequency);
@@ -169,10 +221,10 @@ export function useAudio(options: UseAudioOptions = {}) {
     };
   }, []);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       audioRef.current?.pause();
+      micStreamRef.current?.getTracks().forEach((t) => t.stop());
       ctxRef.current?.close();
     };
   }, []);
@@ -183,8 +235,11 @@ export function useAudio(options: UseAudioOptions = {}) {
     pause,
     seek,
     getData,
+    startMic,
+    stopMic: stopMicInput,
     isPlaying,
     currentTime,
     duration,
+    source,
   };
 }
