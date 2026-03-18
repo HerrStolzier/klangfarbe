@@ -10,12 +10,14 @@ interface VisualizerCanvasProps {
   getData: () => AnalyserData | null;
   isPlaying: boolean;
   visualizerIndex: number;
+  colorSchemeIndex: number;
 }
 
 export function VisualizerCanvas({
   getData,
   isPlaying,
   visualizerIndex,
+  colorSchemeIndex,
 }: VisualizerCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
@@ -24,10 +26,13 @@ export function VisualizerCanvas({
     deltaTime: 0.016,
     beatIntensity: 0,
     prevEnergy: 0,
+    colorSchemeIndex: 0,
   });
   const lastTimeRef = useRef<number>(0);
   const visualizerRef = useRef(visualizerIndex);
   visualizerRef.current = visualizerIndex;
+  const colorSchemeRef = useRef(colorSchemeIndex);
+  colorSchemeRef.current = colorSchemeIndex;
 
   const getDataRef = useRef(getData);
   getDataRef.current = getData;
@@ -78,6 +83,7 @@ export function VisualizerCanvas({
     }
 
     // Render current visualizer
+    state.colorSchemeIndex = colorSchemeRef.current;
     const renderer = VISUALIZERS[visualizerRef.current] ?? spectrum;
     renderer.draw(ctx, width, height, data, state);
 

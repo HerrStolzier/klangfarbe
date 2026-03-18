@@ -9,6 +9,7 @@ export interface VisualizerState {
   deltaTime: number;
   beatIntensity: number;
   prevEnergy: number;
+  colorSchemeIndex: number;
 }
 
 export interface VisualizerRenderer {

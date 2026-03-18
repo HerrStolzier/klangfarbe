@@ -7,6 +7,7 @@ import { DeezerSearch } from "@/components/DeezerSearch";
 import { AudioUploader } from "@/components/AudioUploader";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { VisualizerCanvas, VISUALIZERS } from "@/components/SpectrumVisualizer";
+import { colorSchemes } from "@/lib/visualizers/colors";
 import type { DeezerTrack } from "@/lib/types";
 
 export default function VisualizerPage() {
@@ -21,6 +22,7 @@ export default function VisualizerPage() {
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [vizIndex, setVizIndex] = useState(0);
+  const [colorIndex, setColorIndex] = useState(0);
   const [controlsVisible, setControlsVisible] = useState(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
@@ -85,6 +87,7 @@ export default function VisualizerPage() {
           getData={audio.getData}
           isPlaying={audio.isPlaying}
           visualizerIndex={vizIndex}
+          colorSchemeIndex={colorIndex}
         />
       </div>
 
@@ -150,21 +153,40 @@ export default function VisualizerPage() {
                   trackArtist={trackInfo.artist}
                 />
 
-                {/* Visualizer switcher */}
-                <div className="mb-0.5 flex gap-1 rounded-lg bg-zinc-900/60 p-1">
-                  {VISUALIZERS.map((v, i) => (
-                    <button
-                      key={v.name}
-                      onClick={() => setVizIndex(i)}
-                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                        i === vizIndex
-                          ? "bg-white text-black"
-                          : "text-zinc-400 hover:text-white"
-                      }`}
-                    >
-                      {v.name}
-                    </button>
-                  ))}
+                {/* Switchers */}
+                <div className="mb-0.5 flex flex-col gap-1.5">
+                  {/* Visualizer mode */}
+                  <div className="flex gap-1 rounded-lg bg-zinc-900/60 p-1">
+                    {VISUALIZERS.map((v, i) => (
+                      <button
+                        key={v.name}
+                        onClick={() => setVizIndex(i)}
+                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                          i === vizIndex
+                            ? "bg-white text-black"
+                            : "text-zinc-400 hover:text-white"
+                        }`}
+                      >
+                        {v.name}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Color scheme */}
+                  <div className="flex gap-1 rounded-lg bg-zinc-900/60 p-1">
+                    {colorSchemes.map((c, i) => (
+                      <button
+                        key={c.name}
+                        onClick={() => setColorIndex(i)}
+                        className={`rounded-md px-2.5 py-1 text-[10px] font-medium transition-colors ${
+                          i === colorIndex
+                            ? "bg-white text-black"
+                            : "text-zinc-500 hover:text-white"
+                        }`}
+                      >
+                        {c.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <button
