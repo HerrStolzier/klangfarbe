@@ -68,21 +68,23 @@ export default function VisualizerPage() {
   const analyserNodeRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number>(0);
 
-  // Run pitch/BPM detection in sync with visualization
+  // Run pitch/BPM detection — throttled to ~15fps for UI updates
   useEffect(() => {
     let running = true;
+    let lastUIUpdate = 0;
 
-    function tick() {
+    function tick(timestamp: number) {
       if (!running) return;
 
       const data = audio.getData();
       if (data) {
         detectBPM(data.energy);
-        setLiveEnergy(data.energy);
 
-        // Pitch detection needs the actual AnalyserNode
-        // We get it from the ref set during audio init
-        // For now detect via the audio data
+        // Throttle React state updates to ~15fps
+        if (timestamp - lastUIUpdate > 66) {
+          setLiveEnergy({ ...data.energy });
+          lastUIUpdate = timestamp;
+        }
       }
 
       animFrameRef.current = requestAnimationFrame(tick);
