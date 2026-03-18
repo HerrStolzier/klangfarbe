@@ -21,6 +21,10 @@ export const metadata: Metadata = {
     description: "See what music looks like.",
     type: "website",
   },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export default function RootLayout({

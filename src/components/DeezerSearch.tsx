@@ -43,12 +43,12 @@ export function DeezerSearch({ onSelect }: DeezerSearchProps) {
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Song suchen..."
-          className="flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white placeholder-zinc-500 outline-none transition-colors focus:border-cyan-500"
+          className="flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-cyan-500 sm:px-4 sm:py-2.5 sm:text-base"
         />
         <button
           onClick={search}
           disabled={isLoading}
-          className="rounded-lg bg-cyan-600 px-5 py-2.5 font-medium text-white transition-colors hover:bg-cyan-500 disabled:opacity-50"
+          className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-cyan-500 disabled:opacity-50 sm:px-5 sm:py-2.5 sm:text-base"
         >
           {isLoading ? "..." : "Suchen"}
         </button>
@@ -60,7 +60,7 @@ export function DeezerSearch({ onSelect }: DeezerSearchProps) {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="mt-3 flex flex-col gap-1 rounded-lg border border-zinc-800 bg-zinc-900/80 p-2"
+            className="mt-2 flex max-h-[40vh] flex-col gap-0.5 overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-900/90 p-1.5 backdrop-blur-sm sm:mt-3 sm:gap-1 sm:p-2"
           >
             {results.map((track) => (
               <motion.li
@@ -74,22 +74,22 @@ export function DeezerSearch({ onSelect }: DeezerSearchProps) {
                     setResults([]);
                     setQuery("");
                   }}
-                  className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-zinc-800"
+                  className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-zinc-800 active:bg-zinc-700 sm:gap-3 sm:px-3 sm:py-2"
                 >
                   <img
                     src={track.cover}
                     alt={track.album}
-                    className="h-10 w-10 rounded"
+                    className="h-9 w-9 rounded sm:h-10 sm:w-10"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-white">
+                    <p className="truncate text-xs font-medium text-white sm:text-sm">
                       {track.title}
                     </p>
-                    <p className="truncate text-xs text-zinc-400">
+                    <p className="truncate text-[10px] text-zinc-400 sm:text-xs">
                       {track.artist} — {track.album}
                     </p>
                   </div>
-                  <span className="text-xs text-zinc-600">
+                  <span className="hidden text-xs text-zinc-600 sm:block">
                     {Math.floor(track.duration / 60)}:
                     {String(track.duration % 60).padStart(2, "0")}
                   </span>
