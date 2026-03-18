@@ -190,7 +190,7 @@ export default function VisualizerPage() {
   return (
     <div
       ref={containerRef}
-      className="relative flex h-[100dvh] flex-col bg-black"
+      className="fixed inset-0 flex flex-col bg-black"
       onMouseMove={resetHideTimer}
       onTouchStart={resetHideTimer}
     >

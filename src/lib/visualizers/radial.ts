@@ -33,7 +33,7 @@ export const radial: VisualizerRenderer = {
     const baseRadius = size * 0.22;
     const maxRadius = size * 0.46;
 
-    rotation += state.deltaTime * (0.1 + intensity * 0.3);
+    rotation += state.deltaTime * (0.03 + intensity * 0.08);
 
     if (state.beatIntensity > 0.85) {
       ctx.fillStyle = `rgba(255, 255, 255, ${(state.beatIntensity - 0.85) * 0.1})`;
@@ -59,7 +59,7 @@ export const radial: VisualizerRenderer = {
     for (let layer = 0; layer < 2; layer++) {
       const layerAlpha = layer === 0 ? 1 : 0.3;
       const layerScale = layer === 0 ? 1 : 0.5;
-      const layerRotation = layer === 0 ? rotation : -rotation * 0.7;
+      const layerRotation = layer === 0 ? rotation : -rotation * 0.4;
 
       ctx.save();
       ctx.globalAlpha = layerAlpha;
