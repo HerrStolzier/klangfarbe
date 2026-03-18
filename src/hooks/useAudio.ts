@@ -36,7 +36,11 @@ function computeEnergy(frequency: Uint8Array<ArrayBuffer>): {
   return { low, mid, high };
 }
 
-export function useAudio() {
+interface UseAudioOptions {
+  onError?: (message: string) => void;
+}
+
+export function useAudio(options: UseAudioOptions = {}) {
   const ctxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -105,8 +109,14 @@ export function useAudio() {
         setCurrentTime(0);
       });
 
-      audio.addEventListener("error", (e) => {
-        console.error("Audio load error:", e);
+      audio.addEventListener("error", () => {
+        const msg =
+          audio.error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
+            ? "Format nicht unterstützt. Versuche MP3, WAV oder OGG."
+            : audio.error?.code === MediaError.MEDIA_ERR_NETWORK
+              ? "Netzwerkfehler beim Laden der Audiodatei."
+              : "Audiodatei konnte nicht geladen werden.";
+        options.onError?.(msg);
         setIsPlaying(false);
       });
 
