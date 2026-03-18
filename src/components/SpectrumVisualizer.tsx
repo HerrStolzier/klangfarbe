@@ -6,6 +6,9 @@ import { spectrum, waveform, radial } from "@/lib/visualizers";
 
 export const VISUALIZERS: VisualizerRenderer[] = [spectrum, waveform, radial];
 
+// Mode names including the Three.js "Immersive" mode (rendered separately)
+export const MODE_NAMES = ["Spectrum", "Waveform", "Radial", "Immersive"];
+
 interface VisualizerCanvasProps {
   getData: () => AnalyserData | null;
   isPlaying: boolean;

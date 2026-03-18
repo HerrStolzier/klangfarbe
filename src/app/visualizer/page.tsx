@@ -11,8 +11,14 @@ import { PlaybackControls } from "@/components/PlaybackControls";
 import { AudioInfo } from "@/components/AudioInfo";
 import { MicButton } from "@/components/MicButton";
 import { DemoTracks } from "@/components/DemoTracks";
-import { VisualizerCanvas, VISUALIZERS } from "@/components/SpectrumVisualizer";
+import { VisualizerCanvas, VISUALIZERS, MODE_NAMES } from "@/components/SpectrumVisualizer";
 import type { VisualizerCanvasHandle } from "@/components/SpectrumVisualizer";
+import dynamic from "next/dynamic";
+
+const ImmersiveVisualizer = dynamic(
+  () => import("@/components/ImmersiveVisualizer").then((m) => m.ImmersiveVisualizer),
+  { ssr: false },
+);
 import { useExport } from "@/hooks/useExport";
 import { colorSchemes } from "@/lib/visualizers/colors";
 import type { AnalyserData } from "@/lib/visualizers/types";
@@ -38,7 +44,7 @@ export default function VisualizerPage() {
   const [vizIndex, setVizIndex] = useState(() => {
     if (typeof window === "undefined") return 0;
     const p = new URLSearchParams(window.location.search);
-    return Math.min(VISUALIZERS.length - 1, Math.max(0, Number(p.get("viz")) || 0));
+    return Math.min(MODE_NAMES.length - 1, Math.max(0, Number(p.get("viz")) || 0));
   });
   const [colorIndex, setColorIndex] = useState(() => {
     if (typeof window === "undefined") return 0;
@@ -149,10 +155,10 @@ export default function VisualizerPage() {
           toggleFullscreen();
           break;
         case "ArrowRight":
-          setVizIndex((i) => (i + 1) % VISUALIZERS.length);
+          setVizIndex((i) => (i + 1) % MODE_NAMES.length);
           break;
         case "ArrowLeft":
-          setVizIndex((i) => (i - 1 + VISUALIZERS.length) % VISUALIZERS.length);
+          setVizIndex((i) => (i - 1 + MODE_NAMES.length) % MODE_NAMES.length);
           break;
         case "ArrowUp":
           setColorIndex((i) => (i + 1) % colorSchemes.length);
@@ -186,15 +192,22 @@ export default function VisualizerPage() {
       onMouseMove={resetHideTimer}
       onTouchStart={resetHideTimer}
     >
-      {/* Visualizer Canvas */}
+      {/* Visualizer */}
       <div className="absolute inset-0">
-        <VisualizerCanvas
-          ref={vizRef}
-          getData={audio.getData}
-          isPlaying={isActive}
-          visualizerIndex={vizIndex}
-          colorSchemeIndex={colorIndex}
-        />
+        {vizIndex < VISUALIZERS.length ? (
+          <VisualizerCanvas
+            ref={vizRef}
+            getData={audio.getData}
+            isPlaying={isActive}
+            visualizerIndex={vizIndex}
+            colorSchemeIndex={colorIndex}
+          />
+        ) : (
+          <ImmersiveVisualizer
+            getData={audio.getData}
+            colorSchemeIndex={colorIndex}
+          />
+        )}
       </div>
 
       {/* UI Overlay */}
@@ -268,9 +281,9 @@ export default function VisualizerPage() {
                 {/* Switchers */}
                 <div className="flex w-full max-w-lg items-center justify-center gap-2">
                   <div className="flex gap-1 rounded-lg bg-zinc-900/60 p-1">
-                    {VISUALIZERS.map((v, i) => (
+                    {MODE_NAMES.map((name, i) => (
                       <button
-                        key={v.name}
+                        key={name}
                         onClick={() => setVizIndex(i)}
                         className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-xs ${
                           i === vizIndex
@@ -278,7 +291,7 @@ export default function VisualizerPage() {
                             : "text-zinc-400 hover:text-white"
                         }`}
                       >
-                        {v.name}
+                        {name}
                       </button>
                     ))}
                   </div>
