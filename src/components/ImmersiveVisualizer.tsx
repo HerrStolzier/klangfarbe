@@ -130,11 +130,15 @@ function ParticleSphere({ stateRef }: { stateRef: React.RefObject<AudioState> })
         Math.sin(nz * 3 + t * 0.3) * 0.15;
 
       // Spike factor: particles shoot outward based on frequency
-      const spike = freqDisplacement * freqDisplacement * 2.5; // quadratic for more dramatic spikes
+      const spike = freqDisplacement * freqDisplacement * 2.5;
       const beatPush = beat * 0.6;
-      const breathe = Math.sin(t * 0.4) * 0.05; // subtle idle animation
 
-      const displacement = 1 + spike + noise + beatPush + breathe;
+      // When no audio: shrink to a small, dim sphere
+      const hasAudio = freq !== null && intensity > 0.01;
+      const idleScale = hasAudio ? 1 : 0.4;
+      const breathe = Math.sin(t * 0.4) * (hasAudio ? 0.05 : 0.02);
+
+      const displacement = idleScale * (1 + spike + noise + beatPush + breathe);
 
       posArray[i * 3] = bx * displacement;
       posArray[i * 3 + 1] = by * displacement;
@@ -143,7 +147,9 @@ function ParticleSphere({ stateRef }: { stateRef: React.RefObject<AudioState> })
       // Color gradient based on displacement
       const colorMix = Math.min(1, spike * 1.5);
       const hue = hue1 + (hue2 - hue1) * colorMix;
-      const lightness = 0.4 + freqDisplacement * 0.5 + beat * 0.1;
+      const lightness = hasAudio
+        ? 0.4 + freqDisplacement * 0.5 + beat * 0.1
+        : 0.15 + Math.sin(t * 0.3 + i * 0.01) * 0.05;
       tempColor.setHSL(hue / 360, sat, lightness);
       tempColor.toArray(colorArray, i * 3);
     }
