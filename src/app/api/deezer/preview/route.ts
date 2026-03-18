@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const url = request.nextUrl.searchParams.get("url");
 
-  if (!url || !url.startsWith("https://cdns-preview-")) {
+  if (!url || !url.match(/^https:\/\/cdn[st]-preview/)) {
     return new Response("Invalid preview URL", { status: 400 });
   }
 
