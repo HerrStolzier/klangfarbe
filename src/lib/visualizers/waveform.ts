@@ -52,7 +52,7 @@ export const waveform: VisualizerRenderer = {
       const { hue: baseHue, saturation } = getHue(scheme, energy, 0.5);
       const hue = baseHue + hueShift;
       const lightness = 55 + intensity * 25;
-      const amplitude = height * (0.3 + intensity * 0.3);
+      const amplitude = height * (0.2 + intensity * 0.2);
 
       ctx.save();
       ctx.globalAlpha = alpha;

@@ -80,7 +80,7 @@ function PulseSphere({ stateRef }: { stateRef: React.RefObject<AudioState> }) {
 
       // Displacement: base radius + frequency displacement + organic noise
       const noise = Math.sin(bx * 2 + t * 0.8) * Math.cos(by * 2 + t * 0.6) * 0.15;
-      const displacement = 1 + freqValue * 0.8 + noise + beat * 0.3;
+      const displacement = 1 + freqValue * 0.5 + noise + beat * 0.2;
 
       // Normalize direction and apply displacement
       const len = Math.sqrt(bx * bx + by * by + bz * bz);
@@ -118,7 +118,7 @@ function PulseSphere({ stateRef }: { stateRef: React.RefObject<AudioState> }) {
         <meshStandardMaterial
           toneMapped={false}
           emissive="#fff"
-          emissiveIntensity={2}
+          emissiveIntensity={0.8}
           roughness={0.3}
           metalness={0.8}
         />
@@ -263,7 +263,7 @@ function OrbitalCamera({ stateRef }: { stateRef: React.RefObject<AudioState> }) 
       : 0;
 
     // Orbit around the sphere
-    const radius = 7 - intensity * 1.5 - beat * 1;
+    const radius = 9 - intensity * 1.5 - beat * 1;
     const speed = 0.12 + intensity * 0.05;
     camera.position.x = Math.sin(t * speed) * radius;
     camera.position.z = Math.cos(t * speed) * radius;
@@ -291,8 +291,8 @@ function Scene({ stateRef }: { stateRef: React.RefObject<AudioState> }) {
 
       <EffectComposer>
         <Bloom
-          intensity={2.5}
-          luminanceThreshold={0.1}
+          intensity={1.2}
+          luminanceThreshold={0.3}
           luminanceSmoothing={0.9}
           mipmapBlur
         />
@@ -336,7 +336,7 @@ export function ImmersiveVisualizer({
   return (
     <Canvas
       gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-      camera={{ position: [0, 0, 7], fov: 60 }}
+      camera={{ position: [0, 0, 9], fov: 55 }}
     >
       <PumpAudioData pump={pumpData} />
       <Scene stateRef={stateRef} />
