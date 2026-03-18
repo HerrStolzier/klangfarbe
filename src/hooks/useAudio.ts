@@ -4,11 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const FFT_SIZE = 2048;
 
-export interface AnalyserData {
-  frequency: Uint8Array<ArrayBuffer>;
-  waveform: Uint8Array<ArrayBuffer>;
-  energy: { low: number; mid: number; high: number };
-}
+import type { AnalyserData } from "@/lib/visualizers/types";
 
 function computeEnergy(frequency: Uint8Array<ArrayBuffer>): {
   low: number;

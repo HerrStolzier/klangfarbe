@@ -6,7 +6,7 @@ import { useAudio } from "@/hooks/useAudio";
 import { DeezerSearch } from "@/components/DeezerSearch";
 import { AudioUploader } from "@/components/AudioUploader";
 import { PlaybackControls } from "@/components/PlaybackControls";
-import { SpectrumVisualizer } from "@/components/SpectrumVisualizer";
+import { VisualizerCanvas, VISUALIZERS } from "@/components/SpectrumVisualizer";
 import type { DeezerTrack } from "@/lib/types";
 
 export default function VisualizerPage() {
@@ -20,6 +20,7 @@ export default function VisualizerPage() {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [vizIndex, setVizIndex] = useState(0);
   const [controlsVisible, setControlsVisible] = useState(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
@@ -80,7 +81,11 @@ export default function VisualizerPage() {
     >
       {/* Visualizer Canvas — full background */}
       <div className="absolute inset-0">
-        <SpectrumVisualizer getData={audio.getData} isPlaying={audio.isPlaying} />
+        <VisualizerCanvas
+          getData={audio.getData}
+          isPlaying={audio.isPlaying}
+          visualizerIndex={vizIndex}
+        />
       </div>
 
       {/* UI Overlay */}
@@ -144,6 +149,23 @@ export default function VisualizerPage() {
                   trackTitle={trackInfo.title}
                   trackArtist={trackInfo.artist}
                 />
+
+                {/* Visualizer switcher */}
+                <div className="mb-0.5 flex gap-1 rounded-lg bg-zinc-900/60 p-1">
+                  {VISUALIZERS.map((v, i) => (
+                    <button
+                      key={v.name}
+                      onClick={() => setVizIndex(i)}
+                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                        i === vizIndex
+                          ? "bg-white text-black"
+                          : "text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      {v.name}
+                    </button>
+                  ))}
+                </div>
 
                 <button
                   onClick={toggleFullscreen}
