@@ -7,7 +7,6 @@ import * as THREE from "three";
 import type { AnalyserData } from "@/lib/visualizers/types";
 import { colorSchemes } from "@/lib/visualizers/colors";
 
-// Shared audio state via ref (zero React re-renders)
 interface AudioState {
   frequency: Uint8Array<ArrayBuffer> | null;
   energy: { low: number; mid: number; high: number };
@@ -16,189 +15,192 @@ interface AudioState {
   colorSchemeIndex: number;
 }
 
-// --- Pulsating Sphere ---
+const PARTICLE_COUNT = 6000;
+const BASE_RADIUS = 2;
 
-const SPHERE_DETAIL = 4; // icosahedron subdivision
-const PARTICLE_COUNT = 800;
+function ParticleSphere({ stateRef }: { stateRef: React.RefObject<AudioState> }) {
+  const pointsRef = useRef<THREE.Points>(null);
 
-function PulseSphere({ stateRef }: { stateRef: React.RefObject<AudioState> }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const wireRef = useRef<THREE.Mesh>(null);
-  const geoRef = useRef<THREE.IcosahedronGeometry | null>(null);
-  const basePositions = useRef<Float32Array | null>(null);
+  // Pre-compute base sphere positions + normals
+  const { basePositions, normals, freqIndices } = useMemo(() => {
+    const pos = new Float32Array(PARTICLE_COUNT * 3);
+    const norm = new Float32Array(PARTICLE_COUNT * 3);
+    const indices = new Uint16Array(PARTICLE_COUNT);
 
-  // Store base vertex positions on first frame
-  useMemo(() => {
-    const geo = new THREE.IcosahedronGeometry(2, SPHERE_DETAIL);
-    geoRef.current = geo;
-    basePositions.current = new Float32Array(geo.attributes.position.array);
-    return geo;
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      // Fibonacci sphere distribution (uniform)
+      const phi = Math.acos(1 - (2 * (i + 0.5)) / PARTICLE_COUNT);
+      const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+
+      const x = Math.sin(phi) * Math.cos(theta);
+      const y = Math.sin(phi) * Math.sin(theta);
+      const z = Math.cos(phi);
+
+      pos[i * 3] = x * BASE_RADIUS;
+      pos[i * 3 + 1] = y * BASE_RADIUS;
+      pos[i * 3 + 2] = z * BASE_RADIUS;
+
+      norm[i * 3] = x;
+      norm[i * 3 + 1] = y;
+      norm[i * 3 + 2] = z;
+
+      // Map position to frequency bin using angle
+      const angle = Math.atan2(z, x);
+      const normalizedAngle = (angle + Math.PI) / (Math.PI * 2);
+      const elevation = Math.asin(y);
+      const normalizedElev = (elevation + Math.PI / 2) / Math.PI;
+      indices[i] = Math.floor((normalizedAngle * 0.6 + normalizedElev * 0.4) * 1024) % 1024;
+    }
+
+    return { basePositions: pos, normals: norm, freqIndices: indices };
+  }, []);
+
+  // Color array
+  const colors = useMemo(() => {
+    const c = new Float32Array(PARTICLE_COUNT * 3);
+    for (let i = 0; i < PARTICLE_COUNT * 3; i++) c[i] = 1;
+    return c;
+  }, []);
+
+  // Sizes array for varying particle sizes
+  const sizes = useMemo(() => {
+    const s = new Float32Array(PARTICLE_COUNT);
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      s[i] = 0.5 + Math.random() * 1.5;
+    }
+    return s;
   }, []);
 
   useFrame(({ clock }) => {
-    const mesh = meshRef.current;
-    const wire = wireRef.current;
-    const geo = geoRef.current;
-    const base = basePositions.current;
-    const state = stateRef.current;
-    if (!mesh || !wire || !geo || !base || !state?.frequency) return;
-
-    const freq = state.frequency;
-    const positions = geo.attributes.position.array as Float32Array;
-    const vertCount = positions.length / 3;
-    const t = clock.getElapsedTime();
-    const intensity = state.energy.low * 0.5 + state.energy.mid * 0.3 + state.energy.high * 0.2;
-    const beat = state.beatIntensity;
-
-    // Beat detection
-    const currentEnergy = state.energy.low;
-    const delta = currentEnergy - state.prevEnergy;
-    if (delta > 0.1) {
-      state.beatIntensity = Math.min(1, delta * 6);
-    } else {
-      state.beatIntensity *= 0.88;
-    }
-    state.prevEnergy = currentEnergy;
-
-    const binCount = freq.length;
-
-    for (let i = 0; i < vertCount; i++) {
-      const bx = base[i * 3];
-      const by = base[i * 3 + 1];
-      const bz = base[i * 3 + 2];
-
-      // Map vertex position to frequency bin
-      // Use the angle from center to determine which frequency to sample
-      const angle = Math.atan2(bz, bx); // -PI to PI
-      const elevation = Math.asin(by / 2); // -PI/2 to PI/2
-      const normalizedAngle = (angle + Math.PI) / (Math.PI * 2); // 0-1
-      const normalizedElev = (elevation + Math.PI / 2) / Math.PI; // 0-1
-
-      // Combine angle and elevation to get frequency index
-      const freqIndex = Math.floor(normalizedAngle * binCount * 0.5 + normalizedElev * binCount * 0.3) % binCount;
-      const freqValue = freq[freqIndex] / 255;
-
-      // Displacement: base radius + frequency displacement + organic noise
-      const noise = Math.sin(bx * 2 + t * 0.8) * Math.cos(by * 2 + t * 0.6) * 0.15;
-      const displacement = 1 + freqValue * 0.5 + noise + beat * 0.2;
-
-      // Normalize direction and apply displacement
-      const len = Math.sqrt(bx * bx + by * by + bz * bz);
-      positions[i * 3] = (bx / len) * 2 * displacement;
-      positions[i * 3 + 1] = (by / len) * 2 * displacement;
-      positions[i * 3 + 2] = (bz / len) * 2 * displacement;
-    }
-
-    geo.attributes.position.needsUpdate = true;
-    geo.computeVertexNormals();
-
-    // Slow rotation
-    mesh.rotation.y = t * 0.15;
-    mesh.rotation.x = Math.sin(t * 0.1) * 0.2;
-    wire.rotation.copy(mesh.rotation);
-
-    // Color based on scheme + energy
-    const scheme = colorSchemes[state.colorSchemeIndex] ?? colorSchemes[0];
-    const isHot = intensity > scheme.threshold;
-    const hue = isHot ? scheme.hotHue(0.5) : scheme.coolHue(0.5);
-    const mat = mesh.material as THREE.MeshStandardMaterial;
-    const wireMat = wire.material as THREE.MeshBasicMaterial;
-
-    mat.emissive.setHSL(hue / 360, scheme.saturation / 100, 0.3 + intensity * 0.4);
-    mat.color.setHSL(hue / 360, scheme.saturation / 100, 0.1);
-    wireMat.color.setHSL(hue / 360, scheme.saturation / 100, 0.5 + intensity * 0.3);
-    wireMat.opacity = 0.15 + intensity * 0.25;
-  });
-
-  const geo = geoRef.current!;
-
-  return (
-    <group>
-      <mesh ref={meshRef} geometry={geo}>
-        <meshStandardMaterial
-          toneMapped={false}
-          emissive="#fff"
-          emissiveIntensity={0.8}
-          roughness={0.3}
-          metalness={0.8}
-        />
-      </mesh>
-      <mesh ref={wireRef} geometry={geo}>
-        <meshBasicMaterial
-          wireframe
-          transparent
-          opacity={0.3}
-          toneMapped={false}
-        />
-      </mesh>
-    </group>
-  );
-}
-
-// --- Beat Particles ---
-
-function BeatParticles({ stateRef }: { stateRef: React.RefObject<AudioState> }) {
-  const pointsRef = useRef<THREE.Points>(null);
-
-  const { positions, velocities, lifetimes } = useMemo(() => {
-    const pos = new Float32Array(PARTICLE_COUNT * 3);
-    const vel = new Float32Array(PARTICLE_COUNT * 3);
-    const life = new Float32Array(PARTICLE_COUNT);
-    return { positions: pos, velocities: vel, lifetimes: life };
-  }, []);
-
-  useFrame((_, dt) => {
     const points = pointsRef.current;
     const state = stateRef.current;
     if (!points) return;
 
     const geo = points.geometry;
-    const posAttr = geo.attributes.position.array as Float32Array;
+    const posArray = geo.attributes.position.array as Float32Array;
+    const colorArray = geo.attributes.color.array as Float32Array;
+    const t = clock.getElapsedTime();
+
+    const freq = state?.frequency;
+    const energy = state?.energy ?? { low: 0, mid: 0, high: 0 };
+    const intensity = energy.low * 0.5 + energy.mid * 0.3 + energy.high * 0.2;
+
+    // Beat detection
+    if (state) {
+      const currentEnergy = energy.low;
+      const delta = currentEnergy - state.prevEnergy;
+      if (delta > 0.08) {
+        state.beatIntensity = Math.min(1, delta * 7);
+      } else {
+        state.beatIntensity *= 0.9;
+      }
+      state.prevEnergy = currentEnergy;
+    }
+
     const beat = state?.beatIntensity ?? 0;
+    const scheme = colorSchemes[state?.colorSchemeIndex ?? 0] ?? colorSchemes[0];
+
+    // Color
+    const isHot = intensity > scheme.threshold;
+    const hue1 = isHot ? scheme.hotHue(0) : scheme.coolHue(0);
+    const hue2 = isHot ? scheme.hotHue(1) : scheme.coolHue(1);
+    const sat = scheme.saturation / 100;
+
+    const tempColor = new THREE.Color();
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-      lifetimes[i] -= dt * 0.8;
+      const nx = normals[i * 3];
+      const ny = normals[i * 3 + 1];
+      const nz = normals[i * 3 + 2];
+      const bx = basePositions[i * 3];
+      const by = basePositions[i * 3 + 1];
+      const bz = basePositions[i * 3 + 2];
 
-      if (lifetimes[i] <= 0 && beat > 0.5 && Math.random() > 0.7) {
-        // Respawn from sphere surface
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(2 * Math.random() - 1);
-        const r = 2.5 + Math.random();
-
-        posAttr[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-        posAttr[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-        posAttr[i * 3 + 2] = r * Math.cos(phi);
-
-        const speed = 2 + Math.random() * 4 + beat * 3;
-        velocities[i * 3] = (posAttr[i * 3] / r) * speed;
-        velocities[i * 3 + 1] = (posAttr[i * 3 + 1] / r) * speed;
-        velocities[i * 3 + 2] = (posAttr[i * 3 + 2] / r) * speed;
-
-        lifetimes[i] = 0.5 + Math.random() * 1.5;
+      // Frequency displacement
+      let freqDisplacement = 0;
+      if (freq) {
+        const fi = freqIndices[i];
+        freqDisplacement = freq[fi] / 255;
       }
 
-      if (lifetimes[i] > 0) {
-        posAttr[i * 3] += velocities[i * 3] * dt;
-        posAttr[i * 3 + 1] += velocities[i * 3 + 1] * dt;
-        posAttr[i * 3 + 2] += velocities[i * 3 + 2] * dt;
+      // Organic noise — slow undulation
+      const noise =
+        Math.sin(nx * 3 + t * 0.7) *
+        Math.cos(ny * 3 + t * 0.5) *
+        Math.sin(nz * 3 + t * 0.3) * 0.15;
 
-        // Fade by moving far away when dead
-      } else {
-        posAttr[i * 3] = 0;
-        posAttr[i * 3 + 1] = -100;
-        posAttr[i * 3 + 2] = 0;
-      }
+      // Spike factor: particles shoot outward based on frequency
+      const spike = freqDisplacement * freqDisplacement * 2.5; // quadratic for more dramatic spikes
+      const beatPush = beat * 0.6;
+      const breathe = Math.sin(t * 0.4) * 0.05; // subtle idle animation
+
+      const displacement = 1 + spike + noise + beatPush + breathe;
+
+      posArray[i * 3] = bx * displacement;
+      posArray[i * 3 + 1] = by * displacement;
+      posArray[i * 3 + 2] = bz * displacement;
+
+      // Color gradient based on displacement
+      const colorMix = Math.min(1, spike * 1.5);
+      const hue = hue1 + (hue2 - hue1) * colorMix;
+      const lightness = 0.4 + freqDisplacement * 0.5 + beat * 0.1;
+      tempColor.setHSL(hue / 360, sat, lightness);
+      tempColor.toArray(colorArray, i * 3);
     }
 
     geo.attributes.position.needsUpdate = true;
+    geo.attributes.color.needsUpdate = true;
 
-    // Color
-    const scheme = colorSchemes[state?.colorSchemeIndex ?? 0] ?? colorSchemes[0];
-    const intensity = state ? state.energy.low * 0.5 + state.energy.mid * 0.3 : 0;
-    const isHot = intensity > scheme.threshold;
-    const hue = isHot ? scheme.hotHue(0.5) : scheme.coolHue(0.5);
-    const mat = points.material as THREE.PointsMaterial;
-    mat.color.setHSL(hue / 360, scheme.saturation / 100, 0.7);
+    // Slow rotation
+    points.rotation.y = t * 0.08;
+    points.rotation.x = Math.sin(t * 0.05) * 0.15;
+  });
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          args={[new Float32Array(basePositions), 3]}
+          count={PARTICLE_COUNT}
+        />
+        <bufferAttribute
+          attach="attributes-color"
+          args={[colors, 3]}
+          count={PARTICLE_COUNT}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.04}
+        vertexColors
+        transparent
+        opacity={0.9}
+        toneMapped={false}
+        sizeAttenuation
+        depthWrite={false}
+      />
+    </points>
+  );
+}
+
+// Ambient dust particles floating around
+function DustParticles() {
+  const pointsRef = useRef<THREE.Points>(null);
+
+  const positions = useMemo(() => {
+    const pos = new Float32Array(500 * 3);
+    for (let i = 0; i < 500; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 20;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 20;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 20;
+    }
+    return pos;
+  }, []);
+
+  useFrame(({ clock }) => {
+    if (pointsRef.current) {
+      pointsRef.current.rotation.y = clock.getElapsedTime() * 0.02;
+    }
   });
 
   return (
@@ -207,13 +209,14 @@ function BeatParticles({ stateRef }: { stateRef: React.RefObject<AudioState> }) 
         <bufferAttribute
           attach="attributes-position"
           args={[positions, 3]}
-          count={PARTICLE_COUNT}
+          count={500}
         />
       </bufferGeometry>
       <pointsMaterial
-        size={0.06}
+        size={0.015}
+        color="#446"
         transparent
-        opacity={0.8}
+        opacity={0.4}
         toneMapped={false}
         sizeAttenuation
       />
@@ -221,82 +224,41 @@ function BeatParticles({ stateRef }: { stateRef: React.RefObject<AudioState> }) 
   );
 }
 
-// --- Orbiting Ring ---
-
-function OrbitRing({ stateRef }: { stateRef: React.RefObject<AudioState> }) {
-  const ringRef = useRef<THREE.Mesh>(null);
-
-  useFrame(({ clock }) => {
-    if (!ringRef.current || !stateRef.current) return;
-    const t = clock.getElapsedTime();
-    const intensity = stateRef.current.energy.low * 0.5 + stateRef.current.energy.mid * 0.3;
-
-    ringRef.current.rotation.x = t * 0.3;
-    ringRef.current.rotation.z = t * 0.2;
-
-    const scale = 3.5 + intensity * 0.8 + stateRef.current.beatIntensity * 0.5;
-    ringRef.current.scale.setScalar(scale);
-
-    const mat = ringRef.current.material as THREE.MeshBasicMaterial;
-    const scheme = colorSchemes[stateRef.current.colorSchemeIndex] ?? colorSchemes[0];
-    const hue = scheme.coolHue(0.3);
-    mat.color.setHSL(hue / 360, scheme.saturation / 100, 0.3 + intensity * 0.3);
-    mat.opacity = 0.1 + intensity * 0.2;
-  });
-
-  return (
-    <mesh ref={ringRef}>
-      <torusGeometry args={[1, 0.01, 16, 100]} />
-      <meshBasicMaterial transparent opacity={0.2} toneMapped={false} />
-    </mesh>
-  );
-}
-
-// --- Camera ---
-
 function OrbitalCamera({ stateRef }: { stateRef: React.RefObject<AudioState> }) {
   useFrame(({ camera, clock }) => {
     const t = clock.getElapsedTime();
     const beat = stateRef.current?.beatIntensity ?? 0;
-    const intensity = stateRef.current
-      ? stateRef.current.energy.low * 0.5 + stateRef.current.energy.mid * 0.3
-      : 0;
+    const energy = stateRef.current?.energy;
+    const intensity = energy ? energy.low * 0.5 + energy.mid * 0.3 : 0;
 
-    // Orbit around the sphere
-    const radius = 9 - intensity * 1.5 - beat * 1;
-    const speed = 0.12 + intensity * 0.05;
+    const radius = 6.5 - intensity * 1 - beat * 0.8;
+    const speed = 0.1 + intensity * 0.03;
     camera.position.x = Math.sin(t * speed) * radius;
     camera.position.z = Math.cos(t * speed) * radius;
-    camera.position.y = Math.sin(t * 0.08) * 2 + beat * 0.8;
+    camera.position.y = Math.sin(t * 0.06) * 1.5;
     camera.lookAt(0, 0, 0);
   });
 
   return null;
 }
 
-// --- Scene ---
-
 function Scene({ stateRef }: { stateRef: React.RefObject<AudioState> }) {
   return (
     <>
       <color attach="background" args={["#000"]} />
-      <ambientLight intensity={0.05} />
-      <pointLight position={[5, 5, 5]} intensity={0.3} />
-      <pointLight position={[-5, -5, -5]} intensity={0.15} color="#4af" />
 
       <OrbitalCamera stateRef={stateRef} />
-      <PulseSphere stateRef={stateRef} />
-      <BeatParticles stateRef={stateRef} />
-      <OrbitRing stateRef={stateRef} />
+      <ParticleSphere stateRef={stateRef} />
+      <DustParticles />
 
       <EffectComposer>
         <Bloom
-          intensity={1.2}
-          luminanceThreshold={0.3}
+          intensity={1.8}
+          luminanceThreshold={0.15}
           luminanceSmoothing={0.9}
           mipmapBlur
         />
-        <Vignette darkness={0.7} />
+        <Vignette darkness={0.5} />
       </EffectComposer>
     </>
   );
@@ -335,8 +297,8 @@ export function ImmersiveVisualizer({
 
   return (
     <Canvas
-      gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-      camera={{ position: [0, 0, 9], fov: 55 }}
+      gl={{ antialias: false, alpha: false, powerPreference: "high-performance" }}
+      camera={{ position: [0, 0, 6.5], fov: 55 }}
     >
       <PumpAudioData pump={pumpData} />
       <Scene stateRef={stateRef} />
