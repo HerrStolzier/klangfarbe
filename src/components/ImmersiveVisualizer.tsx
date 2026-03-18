@@ -237,7 +237,7 @@ function OrbitalCamera({ stateRef }: { stateRef: React.RefObject<AudioState> }) 
     const energy = stateRef.current?.energy;
     const intensity = energy ? energy.low * 0.5 + energy.mid * 0.3 : 0;
 
-    const radius = 8.5 - intensity * 1 - beat * 0.8;
+    const radius = 10 - intensity * 1 - beat * 0.8;
     const speed = 0.1 + intensity * 0.03;
     camera.position.x = Math.sin(t * speed) * radius;
     camera.position.z = Math.cos(t * speed) * radius;
@@ -304,7 +304,7 @@ export function ImmersiveVisualizer({
   return (
     <Canvas
       gl={{ antialias: false, alpha: false, powerPreference: "high-performance" }}
-      camera={{ position: [0, 0, 8.5], fov: 50 }}
+      camera={{ position: [0, 0, 10], fov: 50 }}
     >
       <PumpAudioData pump={pumpData} />
       <Scene stateRef={stateRef} />
