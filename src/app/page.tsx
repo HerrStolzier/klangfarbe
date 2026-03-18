@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-black text-white">
@@ -9,15 +11,30 @@ export default function Home() {
           Sieh wie Musik aussieht. Lade einen Song hoch oder nutze dein Mikrofon
           — und erlebe Audio als visuelle Kunst.
         </p>
-        <div className="flex gap-4">
-          <a
-            href="/visualizer"
-            className="rounded-full bg-white px-8 py-3 font-medium text-black transition-colors hover:bg-zinc-200"
-          >
-            Starten
-          </a>
-        </div>
+        <Link
+          href="/visualizer"
+          className="rounded-full bg-white px-8 py-3 font-medium text-black transition-colors hover:bg-zinc-200"
+        >
+          Starten
+        </Link>
       </main>
+
+      <footer className="absolute bottom-0 flex w-full justify-center gap-6 p-6 text-xs text-zinc-600">
+        <Link href="/impressum" className="hover:text-zinc-400">
+          Impressum
+        </Link>
+        <Link href="/datenschutz" className="hover:text-zinc-400">
+          Datenschutz
+        </Link>
+        <a
+          href="https://github.com/HerrStolzier/klangfarbe"
+          className="hover:text-zinc-400"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          GitHub
+        </a>
+      </footer>
     </div>
   );
 }

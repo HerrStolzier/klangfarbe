@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Klangfarbe
+
+**See what music looks like.** Real-time audio visualizer in the browser.
+
+Upload a song, search via Deezer, or use your microphone — and watch audio come alive as stunning visual art.
+
+## Features
+
+- **3 Visualizer Modes** — Spectrum (frequency bars), Waveform (organic waves), Radial (circular spectrum)
+- **5 Color Schemes** — Neon, Inferno, Ocean, Aurora, Mono
+- **Deezer Integration** — Search and play 30-second previews instantly
+- **Microphone Input** — Visualize live audio from your mic
+- **BPM Detection** — Real-time tempo detection
+- **Energy Display** — Low/Mid/High frequency energy bars
+- **Export** — PNG screenshots + WebM video recording
+- **Keyboard Shortcuts** — Space (play/pause), F (fullscreen), arrows (switch modes)
+- **Shareable Settings** — URL parameters preserve your visualizer/color choices
+- **Mobile-Ready** — Touch-optimized controls, responsive layout
+
+## Tech Stack
+
+- **Next.js 16** (App Router, Turbopack)
+- **TypeScript**
+- **Tailwind CSS v4**
+- **Framer Motion**
+- **Web Audio API** (AnalyserNode, FFT)
+- **Pitchy** (pitch detection)
+- **Canvas 2D** (GPU-accelerated rendering)
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Keyboard Shortcuts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Key | Action |
+|-----|--------|
+| `Space` | Play / Pause |
+| `F` | Toggle fullscreen |
+| `←` `→` | Switch visualizer mode |
+| `↑` `↓` | Switch color scheme |
 
-## Learn More
+## Architecture
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/                    # Next.js pages + API routes
+│   ├── api/deezer/         # CORS proxy for Deezer API
+│   └── visualizer/         # Main visualizer page
+├── components/             # React components
+├── hooks/
+│   ├── useAudio.ts         # Audio pipeline (context, analyser, playback, mic)
+│   ├── useBPM.ts           # Beat detection via energy peaks
+│   ├── useExport.ts        # Screenshot + video recording
+│   └── usePitch.ts         # Pitch detection (Pitchy/YIN)
+└── lib/
+    └── visualizers/        # Renderer modules (pure functions)
+        ├── spectrum.ts
+        ├── waveform.ts
+        ├── radial.ts
+        ├── colors.ts       # Color scheme definitions
+        └── particles.ts    # Shared particle system
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
