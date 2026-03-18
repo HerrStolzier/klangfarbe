@@ -219,16 +219,18 @@ export default function VisualizerPage() {
 
               <DeezerSearch onSelect={handleDeezerSelect} />
 
-              <div className="flex items-center gap-3">
-                {!isFullscreen && !trackInfo && (
-                  <AudioUploader onFileSelect={handleFileSelect} />
-                )}
-                <MicButton
-                  source={audio.source}
-                  onStartMic={handleStartMic}
-                  onStopMic={handleStopMic}
-                />
-              </div>
+              {!trackInfo || audio.source === "mic" ? (
+                <div className="flex items-center gap-3">
+                  {!isFullscreen && !trackInfo && (
+                    <AudioUploader onFileSelect={handleFileSelect} />
+                  )}
+                  <MicButton
+                    source={audio.source}
+                    onStartMic={handleStartMic}
+                    onStopMic={handleStopMic}
+                  />
+                </div>
+              ) : null}
 
               {!trackInfo && (
                 <DemoTracks onSelect={handleDeezerSelect} />
@@ -248,18 +250,8 @@ export default function VisualizerPage() {
               </AnimatePresence>
             </motion.div>
 
-            {/* Center: Audio Info (BPM, Pitch, Energy) */}
-            {isActive && (
-              <div className="pointer-events-none flex flex-1 items-center justify-center">
-                <AudioInfo
-                  bpm={bpm}
-                  pitch={livePitch}
-                  energy={liveEnergy}
-                />
-              </div>
-            )}
-
-            {!isActive && <div className="flex-1" />}
+            {/* Spacer */}
+            <div className="flex-1" />
 
             {/* Bottom: Controls */}
             {trackInfo && audio.source === "file" && (
@@ -268,6 +260,11 @@ export default function VisualizerPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col items-center gap-3 p-3 sm:p-6"
               >
+                {/* Audio Info */}
+                {isActive && (
+                  <AudioInfo bpm={bpm} pitch={livePitch} energy={liveEnergy} />
+                )}
+
                 {/* Switchers */}
                 <div className="flex w-full max-w-lg items-center justify-center gap-2">
                   <div className="flex gap-1 rounded-lg bg-zinc-900/60 p-1">
@@ -396,8 +393,9 @@ export default function VisualizerPage() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex justify-center gap-2 p-3 sm:p-6"
+                className="flex flex-col items-center gap-3 p-3 sm:p-6"
               >
+                <AudioInfo bpm={bpm} pitch={livePitch} energy={liveEnergy} />
                 <div className="flex gap-1 rounded-lg bg-zinc-900/60 p-1">
                   {VISUALIZERS.map((v, i) => (
                     <button

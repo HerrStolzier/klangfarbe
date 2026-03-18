@@ -16,7 +16,7 @@ export const radial: VisualizerRenderer = {
     data: AnalyserData | null,
     state: VisualizerState,
   ) {
-    ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
     ctx.fillRect(0, 0, width, height);
 
     if (!data) {
@@ -69,7 +69,7 @@ export const radial: VisualizerRenderer = {
           sum += frequency[i * binsPerSegment + j];
         }
         const rawValue = sum / binsPerSegment / 255;
-        smoothSegments[i] += (rawValue - smoothSegments[i]) * 0.45;
+        smoothSegments[i] += (rawValue - smoothSegments[i]) * 0.6;
         const value = smoothSegments[i];
 
         const angle = (i / SEGMENT_COUNT) * Math.PI * 2 + layerRotation;

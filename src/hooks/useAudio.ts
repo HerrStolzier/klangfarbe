@@ -112,7 +112,16 @@ export function useAudio(options: UseAudioOptions = {}) {
       audio.src = url;
 
       audio.addEventListener("loadedmetadata", () => setDuration(audio.duration));
-      audio.addEventListener("timeupdate", () => setCurrentTime(audio.currentTime));
+      audio.addEventListener("durationchange", () => {
+        if (isFinite(audio.duration)) setDuration(audio.duration);
+      });
+      audio.addEventListener("timeupdate", () => {
+        setCurrentTime(audio.currentTime);
+        // Some streams only report duration after playback starts
+        if (isFinite(audio.duration) && audio.duration > 0) {
+          setDuration(audio.duration);
+        }
+      });
       audio.addEventListener("ended", () => {
         setIsPlaying(false);
         setCurrentTime(0);
