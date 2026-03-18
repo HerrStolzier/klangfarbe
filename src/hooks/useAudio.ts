@@ -113,18 +113,22 @@ export function useAudio(options: UseAudioOptions = {}) {
 
       const audio = new Audio();
       audio.crossOrigin = "anonymous";
+      audio.preload = "auto";
       audio.src = url;
 
-      audio.addEventListener("loadedmetadata", () => setDuration(audio.duration));
-      audio.addEventListener("durationchange", () => {
-        if (isFinite(audio.duration)) setDuration(audio.duration);
-      });
-      audio.addEventListener("timeupdate", () => {
-        setCurrentTime(audio.currentTime);
-        // Some streams only report duration after playback starts
+      const trySetDuration = () => {
         if (isFinite(audio.duration) && audio.duration > 0) {
           setDuration(audio.duration);
         }
+      };
+
+      audio.addEventListener("loadedmetadata", trySetDuration);
+      audio.addEventListener("durationchange", trySetDuration);
+      audio.addEventListener("loadeddata", trySetDuration);
+      audio.addEventListener("canplay", trySetDuration);
+      audio.addEventListener("timeupdate", () => {
+        setCurrentTime(audio.currentTime);
+        trySetDuration();
       });
       audio.addEventListener("ended", () => {
         setIsPlaying(false);

@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
   return new Response(arrayBuffer, {
     headers: {
       "Content-Type": "audio/mpeg",
+      "Content-Length": String(arrayBuffer.byteLength),
+      "Accept-Ranges": "bytes",
       "Cache-Control": "public, max-age=3600",
     },
   });

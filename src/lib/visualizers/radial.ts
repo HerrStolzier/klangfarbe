@@ -29,8 +29,9 @@ export const radial: VisualizerRenderer = {
     const intensity = energy.low * 0.5 + energy.mid * 0.3 + energy.high * 0.2;
     const centerX = width / 2;
     const centerY = height / 2;
-    const baseRadius = Math.min(width, height) * 0.18;
-    const maxRadius = Math.min(width, height) * 0.42;
+    const size = Math.min(width, height);
+    const baseRadius = size * 0.22;
+    const maxRadius = size * 0.46;
 
     rotation += state.deltaTime * (0.1 + intensity * 0.3);
 

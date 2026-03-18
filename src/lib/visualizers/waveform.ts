@@ -52,14 +52,14 @@ export const waveform: VisualizerRenderer = {
       const { hue: baseHue, saturation } = getHue(scheme, energy, 0.5);
       const hue = baseHue + hueShift;
       const lightness = 55 + intensity * 25;
-      const amplitude = height * (0.2 + intensity * 0.25);
+      const amplitude = height * (0.3 + intensity * 0.3);
 
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, 1)`;
       ctx.shadowColor = `hsla(${hue}, 100%, ${lightness}%, 0.7)`;
       ctx.shadowBlur = 15 + intensity * 20;
-      ctx.lineWidth = h === 0 ? 3 : 1.5;
+      ctx.lineWidth = h === 0 ? 4 : 2;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
 
