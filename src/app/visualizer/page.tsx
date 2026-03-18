@@ -12,6 +12,8 @@ import { AudioInfo } from "@/components/AudioInfo";
 import { MicButton } from "@/components/MicButton";
 import { DemoTracks } from "@/components/DemoTracks";
 import { VisualizerCanvas, VISUALIZERS } from "@/components/SpectrumVisualizer";
+import type { VisualizerCanvasHandle } from "@/components/SpectrumVisualizer";
+import { useExport } from "@/hooks/useExport";
 import { colorSchemes } from "@/lib/visualizers/colors";
 import type { AnalyserData } from "@/lib/visualizers/types";
 import type { DeezerTrack } from "@/lib/types";
@@ -24,6 +26,8 @@ export default function VisualizerPage() {
   const { detect: detectPitch } = usePitch();
   const { bpm, detect: detectBPM } = useBPM();
   const containerRef = useRef<HTMLDivElement>(null);
+  const vizRef = useRef<VisualizerCanvasHandle>(null);
+  const exportTool = useExport();
 
   const [trackInfo, setTrackInfo] = useState<{
     title: string;
@@ -31,10 +35,26 @@ export default function VisualizerPage() {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [vizIndex, setVizIndex] = useState(0);
-  const [colorIndex, setColorIndex] = useState(0);
+  const [vizIndex, setVizIndex] = useState(() => {
+    if (typeof window === "undefined") return 0;
+    const p = new URLSearchParams(window.location.search);
+    return Math.min(VISUALIZERS.length - 1, Math.max(0, Number(p.get("viz")) || 0));
+  });
+  const [colorIndex, setColorIndex] = useState(() => {
+    if (typeof window === "undefined") return 0;
+    const p = new URLSearchParams(window.location.search);
+    return Math.min(colorSchemes.length - 1, Math.max(0, Number(p.get("color")) || 0));
+  });
   const [controlsVisible, setControlsVisible] = useState(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  // Sync settings to URL (without reload)
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("viz", String(vizIndex));
+    url.searchParams.set("color", String(colorIndex));
+    window.history.replaceState({}, "", url.toString());
+  }, [vizIndex, colorIndex]);
 
   // Live analysis state (updated in animation frame)
   const [livePitch, setLivePitch] = useState<PitchInfo | null>(null);
@@ -116,6 +136,36 @@ export default function VisualizerPage() {
     [audio],
   );
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.target instanceof HTMLInputElement) return;
+      switch (e.key) {
+        case " ":
+          e.preventDefault();
+          audio.isPlaying ? audio.pause() : audio.play();
+          break;
+        case "f":
+          toggleFullscreen();
+          break;
+        case "ArrowRight":
+          setVizIndex((i) => (i + 1) % VISUALIZERS.length);
+          break;
+        case "ArrowLeft":
+          setVizIndex((i) => (i - 1 + VISUALIZERS.length) % VISUALIZERS.length);
+          break;
+        case "ArrowUp":
+          setColorIndex((i) => (i + 1) % colorSchemes.length);
+          break;
+        case "ArrowDown":
+          setColorIndex((i) => (i - 1 + colorSchemes.length) % colorSchemes.length);
+          break;
+      }
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [audio, toggleFullscreen]);
+
   const handleStartMic = useCallback(() => {
     setError(null);
     setTrackInfo({ title: "Mikrofon" });
@@ -139,6 +189,7 @@ export default function VisualizerPage() {
       {/* Visualizer Canvas */}
       <div className="absolute inset-0">
         <VisualizerCanvas
+          ref={vizRef}
           getData={audio.getData}
           isPlaying={isActive}
           visualizerIndex={vizIndex}
@@ -263,6 +314,64 @@ export default function VisualizerPage() {
                     trackTitle={trackInfo.title}
                     trackArtist={trackInfo.artist}
                   />
+                  {/* Export buttons */}
+                  <div className="mb-0.5 flex gap-1">
+                    <button
+                      onClick={() => {
+                        const canvas = vizRef.current?.getCanvas();
+                        if (canvas) exportTool.takeScreenshot(canvas);
+                      }}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
+                      title="Screenshot (PNG)"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <path d="m21 15-5-5L5 21" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => {
+                        const canvas = vizRef.current?.getCanvas();
+                        if (!canvas) return;
+                        if (exportTool.state === "recording") {
+                          exportTool.stopRecording();
+                        } else {
+                          exportTool.startRecording(canvas);
+                        }
+                      }}
+                      className={`hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors sm:flex ${
+                        exportTool.state === "recording"
+                          ? "bg-red-600 text-white"
+                          : exportTool.state === "processing"
+                            ? "text-yellow-400"
+                            : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                      }`}
+                      title={
+                        exportTool.state === "recording"
+                          ? "Aufnahme stoppen"
+                          : exportTool.state === "processing"
+                            ? "Wird verarbeitet..."
+                            : "Video aufnehmen (WebM)"
+                      }
+                    >
+                      {exportTool.state === "recording" ? (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                          <rect x="4" y="4" width="16" height="16" rx="2" />
+                        </svg>
+                      ) : exportTool.state === "processing" ? (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
+                          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                        </svg>
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10" />
+                          <circle cx="12" cy="12" r="3" fill="currentColor" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+
                   <button
                     onClick={toggleFullscreen}
                     className="mb-0.5 hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white sm:flex"
