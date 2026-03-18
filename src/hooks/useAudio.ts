@@ -38,6 +38,10 @@ interface UseAudioOptions {
 }
 
 export function useAudio(options: UseAudioOptions = {}) {
+  // Stabilize options via ref to prevent re-render cascades
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+
   const ctxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -133,7 +137,7 @@ export function useAudio(options: UseAudioOptions = {}) {
             : audio.error?.code === MediaError.MEDIA_ERR_NETWORK
               ? "Netzwerkfehler beim Laden der Audiodatei."
               : "Audiodatei konnte nicht geladen werden.";
-        options.onError?.(msg);
+        optionsRef.current.onError?.(msg);
         setIsPlaying(false);
       });
 
@@ -147,7 +151,7 @@ export function useAudio(options: UseAudioOptions = {}) {
       setCurrentTime(0);
       setDuration(0);
     },
-    [ensureContext, stopMic, stopFile, options],
+    [ensureContext, stopMic, stopFile],
   );
 
   const startMic = useCallback(async () => {
@@ -173,7 +177,7 @@ export function useAudio(options: UseAudioOptions = {}) {
     } catch {
       options.onError?.("Mikrofonzugriff verweigert.");
     }
-  }, [ensureContext, stopFile, stopMic, options]);
+  }, [ensureContext, stopFile, stopMic]);
 
   const stopMicInput = useCallback(() => {
     stopMic();

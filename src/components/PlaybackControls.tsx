@@ -35,10 +35,11 @@ export function PlaybackControls({
 
   const seekFromEvent = useCallback(
     (clientX: number) => {
-      if (!barRef.current || !duration) return;
+      if (!barRef.current) return;
+      const d = duration > 0 ? duration : 30; // fallback to 30s for Deezer previews
       const rect = barRef.current.getBoundingClientRect();
       const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-      onSeek(x * duration);
+      onSeek(x * d);
     },
     [duration, onSeek],
   );
@@ -101,7 +102,16 @@ export function PlaybackControls({
           <div
             ref={barRef}
             className="relative h-2 flex-1 cursor-pointer rounded-full bg-zinc-800 sm:h-1.5"
-            onClick={(e) => seekFromEvent(e.clientX)}
+            onMouseDown={(e) => {
+              seekFromEvent(e.clientX);
+              const onMouseMove = (ev: MouseEvent) => seekFromEvent(ev.clientX);
+              const onMouseUp = () => {
+                document.removeEventListener("mousemove", onMouseMove);
+                document.removeEventListener("mouseup", onMouseUp);
+              };
+              document.addEventListener("mousemove", onMouseMove);
+              document.addEventListener("mouseup", onMouseUp);
+            }}
             onTouchStart={handleTouchStart}
           >
             <div
