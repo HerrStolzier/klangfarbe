@@ -411,27 +411,28 @@ export default function VisualizerPage() {
                 className="flex flex-col items-center gap-3 p-3 sm:p-6"
               >
                 <AudioInfo bpm={bpm} pitch={livePitch} energy={liveEnergy} />
-                <div className="flex gap-1 rounded-lg bg-zinc-900/60 p-1">
-                  {VISUALIZERS.map((v, i) => (
-                    <button
-                      key={v.name}
-                      onClick={() => setVizIndex(i)}
-                      className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-xs ${
-                        i === vizIndex
-                          ? "bg-white text-black"
-                          : "text-zinc-400 hover:text-white"
-                      }`}
-                    >
-                      {v.name}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex gap-1 rounded-lg bg-zinc-900/60 p-1">
-                  {colorSchemes.map((c, i) => (
-                    <button
-                      key={c.name}
-                      onClick={() => setColorIndex(i)}
-                      className={`rounded-md px-2 py-1 text-[10px] font-medium transition-colors sm:px-2.5 sm:text-[11px] ${
+                <div className="flex w-full max-w-lg items-center justify-center gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="flex gap-1 rounded-lg bg-zinc-900/60 p-1">
+                    {MODE_NAMES.map((name, i) => (
+                      <button
+                        key={name}
+                        onClick={() => setVizIndex(i)}
+                        className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-xs ${
+                          i === vizIndex
+                            ? "bg-white text-black"
+                            : "text-zinc-400 hover:text-white"
+                        }`}
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-1 rounded-lg bg-zinc-900/60 p-1">
+                    {colorSchemes.map((c, i) => (
+                      <button
+                        key={c.name}
+                        onClick={() => setColorIndex(i)}
+                        className={`shrink-0 rounded-md px-1.5 py-1 text-[9px] font-medium transition-colors sm:px-2.5 sm:text-[11px] ${
                         i === colorIndex
                           ? "bg-white text-black"
                           : "text-zinc-500 hover:text-white"
@@ -440,6 +441,7 @@ export default function VisualizerPage() {
                       {c.name}
                     </button>
                   ))}
+                  </div>
                 </div>
               </motion.div>
             )}

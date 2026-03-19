@@ -179,7 +179,7 @@ export function useAudio(options: UseAudioOptions = {}) {
       setCurrentTime(0);
       setDuration(0);
     } catch {
-      options.onError?.("Mikrofonzugriff verweigert.");
+      optionsRef.current.onError?.("Mikrofonzugriff verweigert.");
     }
   }, [ensureContext, stopFile, stopMic]);
 
