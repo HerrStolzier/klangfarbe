@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AnalyserData } from "@/lib/visualizers/types";
+
+// Standalone type — no dependency on visualizers/
+export interface AnalyserData {
+  frequency: Uint8Array<ArrayBuffer>;
+  waveform: Uint8Array<ArrayBuffer>;
+  energy: { low: number; mid: number; high: number };
+}
 
 const FFT_SIZE = 2048;
 

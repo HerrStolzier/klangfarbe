@@ -1,8 +1,7 @@
-export interface AnalyserData {
-  frequency: Uint8Array<ArrayBuffer>;
-  waveform: Uint8Array<ArrayBuffer>;
-  energy: { low: number; mid: number; high: number };
-}
+import type { AnalyserData } from "@/hooks/useAudio";
+
+// Re-export for backwards compatibility
+export type { AnalyserData };
 
 export interface VisualizerState {
   time: number;

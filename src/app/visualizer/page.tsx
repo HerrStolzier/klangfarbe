@@ -30,7 +30,7 @@ export default function VisualizerPage() {
     onError: (msg) => setError(msg),
   });
   const { detect: detectPitch } = usePitch();
-  const { bpm, detect: detectBPM } = useBPM();
+  const { bpm, detect: detectBPM, reset: resetBPM } = useBPM();
   const containerRef = useRef<HTMLDivElement>(null);
   const vizRef = useRef<VisualizerCanvasHandle>(null);
   const exportTool = useExport();
@@ -128,20 +128,22 @@ export default function VisualizerPage() {
       }
       const proxyUrl = `/api/deezer/preview?url=${encodeURIComponent(track.preview)}`;
       setTrackInfo({ title: track.title, artist: track.artist });
+      resetBPM();
       audio.load(proxyUrl);
       setTimeout(() => audio.play(), 200);
     },
-    [audio],
+    [audio, resetBPM],
   );
 
   const handleFileSelect = useCallback(
     (url: string, name: string) => {
       setError(null);
       setTrackInfo({ title: name });
+      resetBPM();
       audio.load(url);
       setTimeout(() => audio.play(), 200);
     },
-    [audio],
+    [audio, resetBPM],
   );
 
   // Keyboard shortcuts
