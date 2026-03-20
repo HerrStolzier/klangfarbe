@@ -1,5 +1,9 @@
 # Klangfarbe
 
+[![CI](https://github.com/HerrStolzier/klangfarbe/actions/workflows/ci.yml/badge.svg)](https://github.com/HerrStolzier/klangfarbe/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)](https://www.typescriptlang.org/)
+
 **See what music looks like.** Real-time audio visualizer in the browser.
 
 Upload a song, search via Deezer, or use your microphone — and watch audio come alive as stunning visual art.
