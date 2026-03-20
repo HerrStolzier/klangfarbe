@@ -2,6 +2,7 @@
   "name": "klangfarbe",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.32.1",
   "description": "Audio visualizer — see what music looks like. Upload audio or use your microphone for real-time visualizations.",
   "author": "HerrStolzier",
   "repository": {
