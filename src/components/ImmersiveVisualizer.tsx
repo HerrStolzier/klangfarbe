@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useCallback } from "react";
+import { useRef, useMemo, useCallback, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 import * as THREE from "three";
@@ -60,15 +60,6 @@ function ParticleSphere({ stateRef }: { stateRef: React.RefObject<AudioState> })
     const c = new Float32Array(PARTICLE_COUNT * 3);
     for (let i = 0; i < PARTICLE_COUNT * 3; i++) c[i] = 1;
     return c;
-  }, []);
-
-  // Sizes array for varying particle sizes
-  const sizes = useMemo(() => {
-    const s = new Float32Array(PARTICLE_COUNT);
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      s[i] = 0.5 + Math.random() * 1.5;
-    }
-    return s;
   }, []);
 
   useFrame(({ clock }) => {
@@ -189,16 +180,24 @@ function ParticleSphere({ stateRef }: { stateRef: React.RefObject<AudioState> })
   );
 }
 
+function seededRandom(seed: number) {
+  return () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
+}
+
 // Ambient dust particles floating around
 function DustParticles() {
   const pointsRef = useRef<THREE.Points>(null);
 
   const positions = useMemo(() => {
+    const rand = seededRandom(42);
     const pos = new Float32Array(500 * 3);
     for (let i = 0; i < 500; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 20;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 20;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 20;
+      pos[i * 3] = (rand() - 0.5) * 20;
+      pos[i * 3 + 1] = (rand() - 0.5) * 20;
+      pos[i * 3 + 2] = (rand() - 0.5) * 20;
     }
     return pos;
   }, []);
@@ -290,7 +289,9 @@ export function ImmersiveVisualizer({
   });
 
   const getDataRef = useRef(getData);
-  getDataRef.current = getData;
+  useEffect(() => {
+    getDataRef.current = getData;
+  });
 
   const pumpData = useCallback(() => {
     const data = getDataRef.current();

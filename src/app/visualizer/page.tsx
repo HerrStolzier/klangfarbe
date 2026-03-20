@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAudio } from "@/hooks/useAudio";
-import { usePitch } from "@/hooks/usePitch";
 import { useBPM } from "@/hooks/useBPM";
 import { DeezerSearch } from "@/components/DeezerSearch";
 import { AudioUploader } from "@/components/AudioUploader";
@@ -23,13 +22,11 @@ import { useExport } from "@/hooks/useExport";
 import { colorSchemes } from "@/lib/visualizers/colors";
 import type { AnalyserData } from "@/lib/visualizers/types";
 import type { DeezerTrack } from "@/lib/types";
-import type { PitchInfo } from "@/hooks/usePitch";
 
 export default function VisualizerPage() {
   const audio = useAudio({
     onError: (msg) => setError(msg),
   });
-  const { detect: detectPitch } = usePitch();
   const { bpm, detect: detectBPM, reset: resetBPM } = useBPM();
   const containerRef = useRef<HTMLDivElement>(null);
   const vizRef = useRef<VisualizerCanvasHandle>(null);
@@ -63,9 +60,8 @@ export default function VisualizerPage() {
   }, [vizIndex, colorIndex]);
 
   // Live analysis state (updated in animation frame)
-  const [livePitch, setLivePitch] = useState<PitchInfo | null>(null);
+  const livePitch = null;
   const [liveEnergy, setLiveEnergy] = useState<AnalyserData["energy"] | null>(null);
-  const analyserNodeRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number>(0);
 
   // Run pitch/BPM detection — throttled to ~15fps for UI updates
@@ -119,32 +115,26 @@ export default function VisualizerPage() {
     }
   }, []);
 
-  const handleDeezerSelect = useCallback(
-    (track: DeezerTrack) => {
-      setError(null);
-      if (!track.preview) {
-        setError("Kein Preview für diesen Song verfügbar.");
-        return;
-      }
-      const proxyUrl = `/api/deezer/preview?url=${encodeURIComponent(track.preview)}`;
-      setTrackInfo({ title: track.title, artist: track.artist });
-      resetBPM();
-      audio.load(proxyUrl);
-      setTimeout(() => audio.play(), 200);
-    },
-    [audio, resetBPM],
-  );
+  const handleDeezerSelect = (track: DeezerTrack) => {
+    setError(null);
+    if (!track.preview) {
+      setError("Kein Preview für diesen Song verfügbar.");
+      return;
+    }
+    const proxyUrl = `/api/deezer/preview?url=${encodeURIComponent(track.preview)}`;
+    setTrackInfo({ title: track.title, artist: track.artist });
+    resetBPM();
+    audio.load(proxyUrl);
+    setTimeout(() => audio.play(), 200);
+  };
 
-  const handleFileSelect = useCallback(
-    (url: string, name: string) => {
-      setError(null);
-      setTrackInfo({ title: name });
-      resetBPM();
-      audio.load(url);
-      setTimeout(() => audio.play(), 200);
-    },
-    [audio, resetBPM],
-  );
+  const handleFileSelect = (url: string, name: string) => {
+    setError(null);
+    setTrackInfo({ title: name });
+    resetBPM();
+    audio.load(url);
+    setTimeout(() => audio.play(), 200);
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -153,7 +143,8 @@ export default function VisualizerPage() {
       switch (e.key) {
         case " ":
           e.preventDefault();
-          audio.isPlaying ? audio.pause() : audio.play();
+          if (audio.isPlaying) audio.pause();
+          else audio.play();
           break;
         case "f":
           toggleFullscreen();
@@ -176,16 +167,16 @@ export default function VisualizerPage() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [audio, toggleFullscreen]);
 
-  const handleStartMic = useCallback(() => {
+  const handleStartMic = () => {
     setError(null);
     setTrackInfo({ title: "Mikrofon" });
     audio.startMic();
-  }, [audio]);
+  };
 
-  const handleStopMic = useCallback(() => {
+  const handleStopMic = () => {
     audio.stopMic();
     setTrackInfo(null);
-  }, [audio]);
+  };
 
   const isActive = audio.isPlaying || audio.source === "mic";
 

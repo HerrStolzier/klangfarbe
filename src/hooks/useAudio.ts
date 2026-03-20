@@ -46,7 +46,9 @@ interface UseAudioOptions {
 export function useAudio(options: UseAudioOptions = {}) {
   // Stabilize options via ref to prevent re-render cascades
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+  useEffect(() => {
+    optionsRef.current = options;
+  });
 
   const ctxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);

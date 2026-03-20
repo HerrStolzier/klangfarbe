@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import type { DeezerTrack } from "@/lib/types";
 
@@ -76,9 +77,11 @@ export function DeezerSearch({ onSelect }: DeezerSearchProps) {
                   }}
                   className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-zinc-800 active:bg-zinc-700 sm:gap-3 sm:px-3 sm:py-2"
                 >
-                  <img
+                  <Image
                     src={track.cover}
                     alt={track.album}
+                    width={40}
+                    height={40}
                     className="h-9 w-9 rounded sm:h-10 sm:w-10"
                   />
                   <div className="min-w-0 flex-1">
