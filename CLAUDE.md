@@ -19,11 +19,12 @@ Audio visualizer web app — "See what music looks like."
 - `pnpm build` — Production build
 - `pnpm lint` — ESLint
 - `pnpm typecheck` — TypeScript type-check
+- `pnpm test:unit` — Vitest Unit Tests (audio-utils, bpm-utils, colors)
 - `pnpm test` — Playwright E2E tests
 - `vercel --prod --yes` — Deploy to production
 
 ## CI/CD & Quality
-- GitHub Actions: Lint + Type-Check + Build on push/PR
+- GitHub Actions: Lint + Type-Check + Vitest Unit Tests + Build on push/PR
 - Pre-commit hook: `.husky/pre-commit` → `pnpm lint`
 
 ## Architecture
@@ -32,7 +33,11 @@ Audio visualizer web app — "See what music looks like."
 - `src/components/` — React components (flat structure)
 - `src/hooks/` — Audio hooks (useAudio, useBPM, usePitch, useExport)
 - `src/lib/visualizers/` — Canvas 2D renderers (spectrum, waveform, radial, colors, particles)
+- `src/lib/audio-utils.ts` — Audio-Hilfsfunktionen (FFT-Binning, Frequency-to-Note, Energy-Berechnung)
+- `src/lib/bpm-utils.ts` — BPM-Detection-Utilities (Peak-Detection, Onset-Filterung, Adaptive Threshold)
 - `src/lib/types.ts` — Shared types (DeezerTrack)
+- `src/components/LandingContent.tsx` — Landing-Page-Inhalt (Feature-Cards, Demo, CTA-Section)
+- `src/__tests__/` — Vitest Unit Tests (audio-utils.test.ts, bpm-utils.test.ts, colors.test.ts)
 
 ## Key Files
 - `src/hooks/useAudio.ts` — Audio pipeline: context, analyser, playback, mic, FFT. Uses refs internally (not state) to avoid timing issues. Options stabilized via `optionsRef` pattern.
