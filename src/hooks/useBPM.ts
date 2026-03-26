@@ -1,21 +1,11 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { interquartileMean } from "@/lib/bpm-utils";
 
 const HISTORY_SIZE = 240; // ~4 seconds at 60fps
 const MIN_BPM = 70;
 const MAX_BPM = 160;
-
-function interquartileMean(arr: number[]): number {
-  if (arr.length < 4) {
-    return arr.reduce((a, b) => a + b, 0) / arr.length;
-  }
-  const sorted = [...arr].sort((a, b) => a - b);
-  const q1 = Math.floor(sorted.length * 0.25);
-  const q3 = Math.ceil(sorted.length * 0.75);
-  const trimmed = sorted.slice(q1, q3);
-  return trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
-}
 
 export function useBPM() {
   const energyHistory = useRef<number[]>([]);

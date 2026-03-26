@@ -18,7 +18,13 @@ Audio visualizer web app — "See what music looks like."
 - `pnpm dev` — Start dev server (localhost:3000)
 - `pnpm build` — Production build
 - `pnpm lint` — ESLint
+- `pnpm typecheck` — TypeScript type-check
+- `pnpm test` — Playwright E2E tests
 - `vercel --prod --yes` — Deploy to production
+
+## CI/CD & Quality
+- GitHub Actions: Lint + Type-Check + Build on push/PR
+- Pre-commit hook: `.husky/pre-commit` → `pnpm lint`
 
 ## Architecture
 - `src/app/` — Next.js pages (landing, visualizer, impressum, datenschutz, sitemap, robots)
